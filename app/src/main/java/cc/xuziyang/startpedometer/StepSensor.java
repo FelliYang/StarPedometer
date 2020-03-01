@@ -9,14 +9,13 @@ import android.provider.Settings;
 /**
  * 计步传感器抽象类，子类分为加速度传感器、或计步传感器
  */
-public abstract class StepSensorBase implements SensorEventListener {
+public abstract class StepSensor implements SensorEventListener {
     private Context context;
     protected StepCallBack stepCallBack;
     protected SensorManager sensorManager;
-    protected static int CURRENT_SETP = 0;
     protected boolean isAvailable = false;
 
-    public StepSensorBase(Context context, StepCallBack stepCallBack) {
+    public StepSensor(Context context, StepCallBack stepCallBack) {
         this.context = context;
         this.stepCallBack = stepCallBack;
     }
@@ -31,11 +30,7 @@ public abstract class StepSensorBase implements SensorEventListener {
     /**
      * 开启计步
      */
-    public boolean registerStep() {
-        if (sensorManager != null) {
-            sensorManager.unregisterListener(this);
-            sensorManager = null;
-        }
+    public boolean countStep() {
         sensorManager = (SensorManager)context.getSystemService(context.SENSOR_SERVICE);
         registerStepListener();
         return isAvailable;

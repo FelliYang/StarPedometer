@@ -9,13 +9,13 @@ import android.util.Log;
 /**
  * 计步传感器
  */
-public class StepSensorPedometer extends StepSensorBase {
+public class StepSensorPedometer extends StepSensor {
     private final String TAG = "StepSensorPedometer";
     private int lastStep = -1;
     private int liveStep = 0;
     private int increment = 0;
     private int sensorMode = 0; // 计步传感器类型
-
+    private int currentStep=0;
     public StepSensorPedometer(Context context, StepCallBack stepCallBack) {
         super(context, stepCallBack);
     }
@@ -48,12 +48,12 @@ public class StepSensorPedometer extends StepSensorBase {
         liveStep = (int) event.values[0];
         if (sensorMode == 0) {
             Log.i(TAG, "Detector步数："+liveStep);
-            StepSensorBase.CURRENT_SETP += liveStep;
+            currentStep += liveStep;
         } else if (sensorMode == 1) {
             Log.i(TAG, "Counter步数："+liveStep);
-            StepSensorBase.CURRENT_SETP = liveStep;
+            currentStep = liveStep;
         }
-        stepCallBack.Step(StepSensorBase.CURRENT_SETP);
+        stepCallBack.Step(currentStep);
     }
 
     @Override

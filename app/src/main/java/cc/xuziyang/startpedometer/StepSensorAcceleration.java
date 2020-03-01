@@ -14,8 +14,11 @@ import java.util.TimerTask;
 /**
  * 加速度传感器
  */
-public class StepSensorAcceleration extends StepSensorBase {
+public class StepSensorAcceleration extends StepSensor {
     private final String TAG = "StepSensorAcceleration";
+    //当前步数
+    private int currentStep = 0;
+
     //存放三轴数据
     final int valueNum = 5;
     //用于存放计算阈值的波峰波谷差值
@@ -56,14 +59,11 @@ public class StepSensorAcceleration extends StepSensorBase {
      * 0-准备计时   1-计时中  2-正常计步中
      */
     private int CountTimeState = 0;
-    public static int TEMP_STEP = 0;
+    public int TEMP_STEP = 0;
     private int lastStep = -1;
     //用x、y、z轴三个维度算出的平均值
-    public static float average = 0;
+    public float average = 0;
     private Timer timer;
-    // 倒计时3.5秒，3.5秒内不会显示计步，用于屏蔽细微波动
-    private long duration = 3500;
-    private TimeCount time;
 
     public StepSensorAcceleration(Context context, StepCallBack stepCallBack) {
         super(context, stepCallBack);
@@ -86,22 +86,13 @@ public class StepSensorAcceleration extends StepSensorBase {
         sensorManager.unregisterListener(this);
     }
 
-    public void onAccuracyChanged(Sensor arg0, int arg1) {
-    }
-
     public void onSensorChanged(SensorEvent event) {
-        Sensor sensor = event.sensor;
-        synchronized (this) {
-            if (sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-                calc_step(event);
-            }
-        }
-    }
-
-    synchronized private void calc_step(SensorEvent event) {
         average = (float) Math.sqrt(Math.pow(event.values[0], 2)
                 + Math.pow(event.values[1], 2) + Math.pow(event.values[2], 2));
         detectorNewStep(average);
+    }
+
+    public void onAccuracyChanged(Sensor arg0, int arg1) {
     }
 
     /*
@@ -117,16 +108,14 @@ public class StepSensorAcceleration extends StepSensorBase {
             if (DetectorPeak(values, gravityOld)) {
                 timeOfLastPeak = timeOfThisPeak;
                 timeOfNow = System.currentTimeMillis();
-
+                timeOfThisPeak = timeOfNow; //出现了波峰，就更新波峰时间点
                 if (timeOfNow - timeOfLastPeak >= 200
                         && (peakOfWave - valleyOfWave >= ThreadValue) && (timeOfNow - timeOfLastPeak) <= 2000) {
-                    timeOfThisPeak = timeOfNow;
                     //更新界面的处理，不涉及到算法
-                    preStep();
+                    updateStep();
                 }
                 if (timeOfNow - timeOfLastPeak >= 200
                         && (peakOfWave - valleyOfWave >= initialValue)) {
-                    timeOfThisPeak = timeOfNow;
                     ThreadValue = Peak_Valley_Thread(peakOfWave - valleyOfWave);
                 }
             }
@@ -134,22 +123,9 @@ public class StepSensorAcceleration extends StepSensorBase {
         gravityOld = values;
     }
 
-    private void preStep() {
-//        if (CountTimeState == 0) {
-//            // 开启计时器
-//            time = new TimeCount(duration, 700);
-//            time.start();
-//            CountTimeState = 1;
-//            Log.v(TAG, "开启计时器");
-//        } else if (CountTimeState == 1) {
-//            TEMP_STEP++;
-//            Log.v(TAG, "计步中 TEMP_STEP:" + TEMP_STEP);
-//        } else if (CountTimeState == 2) {
-        StepSensorBase.CURRENT_SETP++;
-//            if (stepCallBack != null) {
-        stepCallBack.Step(StepSensorBase.CURRENT_SETP);
-//            }
-//        }
+    private void updateStep() {
+        currentStep++;
+        stepCallBack.Step(currentStep);
 
     }
 
@@ -159,7 +135,7 @@ public class StepSensorAcceleration extends StepSensorBase {
      * 以下四个条件判断为波峰：
      * 1.目前点为下降的趋势：isDirectionUp为false
      * 2.之前的点为上升的趋势：lastStatus为true
-     * 3.到波峰为止，持续上升大于等于2次
+     * 3.到波峰为止，持续上升大于等于4次
      * 4.波峰值大于1.2g,小于2g
      * 记录波谷值
      * 1.观察波形图，可以发现在出现步子的地方，波谷的下一个就是波峰，有比较明显的特征以及差值
@@ -178,7 +154,7 @@ public class StepSensorAcceleration extends StepSensorBase {
 
 //        Log.v(TAG, "oldValue:" + oldValue);
         if (!isDirectionUp && lastStatus
-                && (continueUpFormerCount >= 2 && (oldValue >= minValue && oldValue < maxValue))) {
+                && (continueUpFormerCount >= 4 && (oldValue >= minValue && oldValue < maxValue))) {
             peakOfWave = oldValue;
             return true;
         } else if (!lastStatus && isDirectionUp) {
@@ -239,51 +215,6 @@ public class StepSensorAcceleration extends StepSensorBase {
             ave = (float) 1.7;
         }
         return ave;
-    }
-
-    class TimeCount extends CountDownTimer {
-        public TimeCount(long millisInFuture, long countDownInterval) {
-            super(millisInFuture, countDownInterval);
-        }
-
-        @Override
-        public void onFinish() {
-            // 如果计时器正常结束，则开始计步
-            time.cancel();
-            StepSensorBase.CURRENT_SETP += TEMP_STEP;
-            lastStep = -1;
-            Log.v(TAG, "计时正常结束");
-
-            timer = new Timer(true);
-            TimerTask task = new TimerTask() {
-                public void run() {
-                    if (lastStep == StepSensorBase.CURRENT_SETP) {
-                        timer.cancel();
-                        CountTimeState = 0;
-                        lastStep = -1;
-                        TEMP_STEP = 0;
-                        Log.v(TAG, "停止计步：" + StepSensorBase.CURRENT_SETP);
-                    } else {
-                        lastStep = StepSensorBase.CURRENT_SETP;
-                    }
-                }
-            };
-            timer.schedule(task, 0, 2000);
-            CountTimeState = 2;
-        }
-
-        @Override
-        public void onTick(long millisUntilFinished) {
-            if (lastStep == TEMP_STEP) {
-                Log.v(TAG, "onTick 计时停止:" + TEMP_STEP);
-                time.cancel();
-                CountTimeState = 0;
-                lastStep = -1;
-                TEMP_STEP = 0;
-            } else {
-                lastStep = TEMP_STEP;
-            }
-        }
     }
 }
 

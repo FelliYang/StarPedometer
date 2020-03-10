@@ -266,7 +266,7 @@ public class MeterDetect implements SensorEventListener {
     }
 
     public void onStop(){
-        mSensorManager.unregisterListener(this);
+//        mSensorManager.unregisterListener(this);
         dbHelper.update(CURRENT_SETP);
         logcat("onStop");
     }

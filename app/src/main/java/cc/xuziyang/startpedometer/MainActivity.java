@@ -4,10 +4,12 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.preference.PreferenceManager;
 
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -18,6 +20,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -35,6 +38,7 @@ import org.w3c.dom.Text;
 
 public class MainActivity extends AppCompatActivity {
     private final String TAG = MainActivity.class.getName();
+    private SharedPreferences preferences;
 
     private int target=100;   //目标步数
     static final int SET_STEP = 1;
@@ -77,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
 
         //
         initUI();
+        //
+        initConfig();
         // 设置计步器
         meterDetect = new MeterDetect(new MeterDetect.OnSensorChangeListener() {
             @Override
@@ -87,6 +93,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }, handler);
         meterDetect.onResume();
+    }
+
+    private void initConfig() {
+        preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        target = preferences.getInt("target", 100);
     }
 
     private void initUI() {
@@ -135,6 +146,10 @@ public class MainActivity extends AppCompatActivity {
                         message.arg1 = Integer.parseInt(meters);
                         handler.sendMessage(message);
                         Toast.makeText(MainActivity.this, "目标步数" + meters, Toast.LENGTH_SHORT).show();
+                        // 保存用户设置
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putInt("target", Integer.parseInt(meters));
+                        editor.apply();
                     }
                     /**添加对话框的退出按钮,并且设置按钮响应事件*/
                 }).setNegativeButton("取消", new DialogInterface.OnClickListener() {
@@ -167,6 +182,15 @@ public class MainActivity extends AppCompatActivity {
     }
     private void logcat(String s){
         Log.v(TAG, s);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            moveTaskToBack(false);
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }
 

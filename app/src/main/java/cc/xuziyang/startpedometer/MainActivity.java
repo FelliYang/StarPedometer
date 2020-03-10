@@ -1,49 +1,128 @@
 package cc.xuziyang.startpedometer;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity implements StepSensor.StepCallBack{
-    private TextView stepText;
-    private StepSensor stepSensor;
+
+import com.jaeger.library.StatusBarUtil;
+
+import org.w3c.dom.Text;
+
+public class MainActivity extends AppCompatActivity {
+
+    private int target=10000;   //目标步数
+    private MeterDetect meterDetect;
+    private ProgressBar progressBar;
+    private TextView stepTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        stepText = (TextView) findViewById(R.id.step_text);
+        Toolbar toolbar =  findViewById(R.id.toolbar);
+        toolbar.setTitle("");
+        setSupportActionBar(toolbar);
 
-        // 开启计步监听, 分为加速度传感器、或计步传感器
-        stepSensor = new StepSensorPedometer(this, this);
-        if (!stepSensor.countStep()) {
-            Toast.makeText(this, "计步传传感器不可用！", Toast.LENGTH_SHORT).show();
-            stepSensor = new StepSensorAcceleration(this, this);
-            if (!stepSensor.countStep()) {
-                Toast.makeText(this, "加速度传感器不可用！", Toast.LENGTH_SHORT).show();
+        //沉浸式设置
+        TextView a = findViewById(R.id.textView2);
+        StatusBarUtil.setTranslucentForImageView(this, 0, a);
+        StatusBarUtil.setTranslucentForImageView(this, 0, toolbar);
+
+        //
+        initUI();
+        // 设置计步器
+        meterDetect = new MeterDetect();
+        meterDetect.onResume();
+        meterDetect.setOnSensorChangeListener(new MeterDetect.OnSensorChangeListener() {
+            @Override
+            public void onStepsListenerChange(int steps) {
+                progressBar.setProgress(steps/target*100);
+                stepTextView.setText(""+steps);
             }
+        });
+    }
+
+    private void initUI() {
+        progressBar = findViewById(R.id.progressBar);
+        stepTextView = findViewById(R.id.step_text);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu (Menu menu){
+        getMenuInflater().inflate(R.menu.toolbar, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected (@NonNull MenuItem item){
+        switch (item.getItemId()) {
+            case R.id.setting:
+                setTargetMeter();
+                break;
+            case R.id.history:
+                Intent intent = new Intent(MainActivity.this, HistoryData.class);
+                startActivity(intent);
+                break;
         }
+        return true;
+    }
+
+
+    private void setTargetMeter () {
+        /**获取引用setting.xml配置文件中的视图组件*/
+        final View view = getLayoutInflater().inflate(R.layout.setting, null);
+
+        /**这里使用链式写法创建了一个AlertDialog对话框,并且把应用到得视图view放入到其中*/
+
+        /**添加AlertDialog的按钮,并且设置按钮响应事件*/
+        new AlertDialog.Builder(MainActivity.this).setTitle("设置目标步数").setView(view)
+                .setPositiveButton("设置", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        /**获取用户输入的步数*/
+                        EditText nameEditText = (EditText) view.findViewById(R.id.target_meter);
+                        /**保存用户输入的步数*/
+                        String meters = nameEditText.getText().toString();
+
+                        Toast.makeText(MainActivity.this, "目标步数" + meters, Toast.LENGTH_SHORT).show();
+                    }
+                    /**添加对话框的退出按钮,并且设置按钮响应事件*/
+                }).setNegativeButton("取消", new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface arg0, int arg1) {
+                Toast.makeText(MainActivity.this, "取消设置", Toast.LENGTH_LONG).show();
+            }
+        }).show();
     }
 
     @Override
     protected void onDestroy() {
-        if(stepSensor.isAvailable) {
-            stepSensor.unregisterStep();
-        }
         super.onDestroy();
-    }
-
-    @Override
-    public void Step(int stepNum) {
-        //  计步回调
-        stepText.setText("步数:" + stepNum);
+        meterDetect.onStop();
     }
 }
+

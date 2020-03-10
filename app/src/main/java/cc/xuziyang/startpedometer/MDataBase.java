@@ -74,27 +74,33 @@ public class MDataBase extends SQLiteOpenHelper {
             dat = getDateNow();
         }
         Cursor cursor = db.rawQuery("select * from History where mDate=?", new String[]{dat});
-        logcat("queryNow: "+cursor.getCount());
+//        logcat("queryNow: "+cursor.getCount());
         return cursor.getCount();
     }
 
-    public ArrayList queryAll(){
-        Cursor cursor = db.query(tableName, null,null,null,null,null,null);
-        ArrayList<Item> allData = new ArrayList<>();
-        Item item;
+    public static Item[]allData;
+
+    public void queryAll(){
+//        Cursor cursor = db.query(tableName, null,null,null,null,null,null);
+        Cursor cursor = db.rawQuery("select * from History order by mDate desc",null);
+        allData = new Item[30];
+        int i=0;
         if(cursor.moveToFirst()){
             do{
                 // 遍历
                 String date = cursor.getString(cursor.getColumnIndex("mDate"));
                 int steps = cursor.getInt(cursor.getColumnIndex("steps"));
-                item = new Item(date, steps);
-                allData.add(item);
-                logcat(item.date+"\t"+item.steps+'\n');
+                Item item = new Item(date, steps);
+                if (i==30)
+                    break;
+                allData[i]=item;
+                logcat(""+i+": "+item.date+"\t"+item.steps+'\n');
+                i++;
                 cursor.moveToNext();
             }while (!cursor.isAfterLast());
         }
+        logcat("size:  "+cursor.getCount());
         cursor.close();
-        return allData;
     }
     public class Item{
         public Item(String _date, int _steps){
@@ -124,8 +130,8 @@ public class MDataBase extends SQLiteOpenHelper {
         Random random = new Random();
         Formatter formatter;
         int meter;
-        for (int i=0;i <30 ;i++){
-            meter = random.nextInt(8000)+3000;
+        for (int i=0;i <29 ;i++){
+            meter = random.nextInt(8000)+1000;
             if(day-1 == 0){
                 mouth -= 1;
                 day = dayamouth[mouth];
@@ -134,7 +140,8 @@ public class MDataBase extends SQLiteOpenHelper {
             }
             formatter = new Formatter();
             formatter.format("2020-%02d-%02d", mouth, day);
-            logcat(formatter.toString()+"  "+meter);
+//            logcat(formatter.toString()+"  "+meter);
+            dat = formatter.toString();
             if(query(dat)==0){
                 insert(dat, meter);
             }

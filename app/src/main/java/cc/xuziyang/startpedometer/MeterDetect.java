@@ -111,7 +111,7 @@ public class MeterDetect implements SensorEventListener {
     }
 
     private void initDB() {
-        dbHelper = new MDataBase(mContext, "history.db", null, 4);
+        dbHelper = new MDataBase(mContext, "history.db", null, 5);
         db = dbHelper.getWritableDatabase();
         dbHelper.setDb(db);
         dbHelper.makeData();
@@ -124,7 +124,7 @@ public class MeterDetect implements SensorEventListener {
             dbHelper.update(CURRENT_SETP);
         }
 
-        ArrayList<MDataBase.Item> allData = dbHelper.queryAll();
+        dbHelper.queryAll();
 
     }
 

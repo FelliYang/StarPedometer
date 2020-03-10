@@ -39,6 +39,7 @@ import com.github.mikephil.charting.interfaces.dataprovider.LineDataProvider;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.Utils;
+import com.google.android.material.tabs.TabLayout;
 import com.jaeger.library.StatusBarUtil;
 
 import java.util.ArrayList;
@@ -47,8 +48,8 @@ import java.util.List;
 public class HistoryData extends AppCompatActivity implements OnChartValueSelectedListener{
 
     private LineChart chart;
-
-
+    public MDataBase.Item[] allData;
+    private final String TAG = HistoryData.class.getName();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -106,8 +107,9 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
             xAxis.setDrawGridLines(false);
             xAxis.setDrawAxisLine(false);
             // 设置x刻度
-            xAxis.setLabelCount(10,false);
-
+//            xAxis.setLabelCount(10,false);
+            // 让x轴上自定义的值和折线上相对应
+//            xAxis.setGranularity(1);
         }
 
         YAxis yAxis;
@@ -119,7 +121,10 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
             chart.getAxisRight().setEnabled(false);
         }
 
-        setData(45, 180);
+        allData = MDataBase.allData;
+        logcat(""+allData.length);
+        setData();
+
 
         // draw points over time
         chart.animateY(1500);
@@ -128,18 +133,18 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
         Legend l = chart.getLegend();
         // draw legend entries as lines
         l.setForm(Legend.LegendForm.LINE);
-        
+
     }
 
-    private void setData(int count, float range) {
+    private void setData() {
 
         ArrayList<Entry> values = new ArrayList<>();
-
+        int range = 180;
         /*在此处添加历史数据*/
-        for (int i = 0; i < count; i++) {
-
-            float val = (float) (Math.random() * range);
-            values.add(new Entry(i, val));
+        for (int i = allData.length-1; i >=0; i--) {
+//        for( int i = 0; i<allData.length; i++){
+            int val = allData[i].steps;
+            values.add(new Entry(29-i, val));
         }
 
         LineDataSet set1;
@@ -235,5 +240,8 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
                 break;
         }
         return true;
+    }
+    private void logcat(String s){
+        Log.v(TAG, s);
     }
 }

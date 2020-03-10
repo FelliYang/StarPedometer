@@ -34,22 +34,32 @@ import com.jaeger.library.StatusBarUtil;
 import org.w3c.dom.Text;
 
 public class MainActivity extends AppCompatActivity {
+    private final String TAG = MainActivity.class.getName();
 
-    private int target=10000;   //目标步数
-    static int SET_STEP;
+    private int target=100;   //目标步数
+    static final int SET_STEP = 1;
+    static final int SET_TARGET = 2;
     private MeterDetect meterDetect;
     private ProgressBar progressBar;
     private TextView stepTextView;
-    private int stepNum;
+//    private int stepNum;
     public Handler handler = new Handler(){
         @Override
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
-            if(msg.what == SET_STEP){
-                int steps = msg.arg1;
-                progressBar.setProgress(steps*100/target);
-                stepTextView.setText(""+steps);
+            switch (msg.what){
+                case SET_STEP:
+                    int steps = msg.arg1;
+                    progressBar.setProgress(steps*100/target);
+                    stepTextView.setText(""+steps);
+                    break;
+                case SET_TARGET:
+                    target = msg.arg1;
+                    progressBar.setProgress(MeterDetect.CURRENT_SETP*100/target);
+                    logcat(""+MeterDetect.CURRENT_SETP*100/target+"  "+target);
+                    break;
             }
+
         }
     };
     @Override
@@ -71,9 +81,9 @@ public class MainActivity extends AppCompatActivity {
         meterDetect = new MeterDetect(new MeterDetect.OnSensorChangeListener() {
             @Override
             public void onStepsListenerChange(int steps) {
-                progressBar.setProgress(steps/target*100);
+                progressBar.setProgress(steps*100/target);
                 stepTextView.setText(""+steps);
-                stepNum = steps;
+//                stepNum = steps;
             }
         }, handler);
         meterDetect.onResume();
@@ -120,7 +130,10 @@ public class MainActivity extends AppCompatActivity {
                         EditText nameEditText = (EditText) view.findViewById(R.id.target_meter);
                         /**保存用户输入的步数*/
                         String meters = nameEditText.getText().toString();
-
+                        Message message = new Message();
+                        message.what = SET_TARGET;
+                        message.arg1 = Integer.parseInt(meters);
+                        handler.sendMessage(message);
                         Toast.makeText(MainActivity.this, "目标步数" + meters, Toast.LENGTH_SHORT).show();
                     }
                     /**添加对话框的退出按钮,并且设置按钮响应事件*/
@@ -149,8 +162,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         meterDetect.onResume();
-        progressBar.setProgress(stepNum/target*100);
-        stepTextView.setText(""+stepNum);
+//        progressBar.setProgress(stepNum/target*100);
+//        stepTextView.setText(""+stepNum);
+    }
+    private void logcat(String s){
+        Log.v(TAG, s);
     }
 }
 

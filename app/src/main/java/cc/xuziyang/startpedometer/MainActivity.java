@@ -15,6 +15,8 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -34,10 +36,22 @@ import org.w3c.dom.Text;
 public class MainActivity extends AppCompatActivity {
 
     private int target=10000;   //目标步数
+    static int SET_STEP;
     private MeterDetect meterDetect;
     private ProgressBar progressBar;
     private TextView stepTextView;
-
+    private int stepNum;
+    public Handler handler = new Handler(){
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            super.handleMessage(msg);
+            if(msg.what == SET_STEP){
+                int steps = msg.arg1;
+                progressBar.setProgress(steps*100/target);
+                stepTextView.setText(""+steps);
+            }
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,15 +68,15 @@ public class MainActivity extends AppCompatActivity {
         //
         initUI();
         // 设置计步器
-        meterDetect = new MeterDetect();
-        meterDetect.onResume();
-        meterDetect.setOnSensorChangeListener(new MeterDetect.OnSensorChangeListener() {
+        meterDetect = new MeterDetect(new MeterDetect.OnSensorChangeListener() {
             @Override
             public void onStepsListenerChange(int steps) {
                 progressBar.setProgress(steps/target*100);
                 stepTextView.setText(""+steps);
+                stepNum = steps;
             }
-        });
+        }, handler);
+        meterDetect.onResume();
     }
 
     private void initUI() {
@@ -120,9 +134,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        meterDetect.onStop();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         meterDetect.onStop();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        meterDetect.onResume();
+        progressBar.setProgress(stepNum/target*100);
+        stepTextView.setText(""+stepNum);
     }
 }
 

@@ -63,10 +63,8 @@ public class MDataBase extends SQLiteOpenHelper {
     public void update(int steps){
         String dat = getDateNow();
 
-        ContentValues contentValues = new ContentValues();
-        contentValues.put("steps",steps);
-
-        db.update(tableName, contentValues,"mDate=?", new String[]{dat});
+        db.execSQL("update History set steps = ? where mDate = ?", new String[]{""+steps, dat});
+//        logcat("update  History set steps = ? where mDate = ? "+ steps+" "+dat);
     }
 
     public int query(String dat){
@@ -94,7 +92,7 @@ public class MDataBase extends SQLiteOpenHelper {
                 if (i==30)
                     break;
                 allData[i]=item;
-                logcat(""+i+": "+item.date+"\t"+item.steps+'\n');
+                logcat(""+i+": "+item.date+" \t"+item.steps+'\n');
                 i++;
                 cursor.moveToNext();
             }while (!cursor.isAfterLast());

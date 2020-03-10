@@ -34,6 +34,7 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.IFillFormatter;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.dataprovider.LineDataProvider;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
@@ -43,6 +44,7 @@ import com.google.android.material.tabs.TabLayout;
 import com.jaeger.library.StatusBarUtil;
 
 import java.util.ArrayList;
+import java.util.Formatter;
 import java.util.List;
 
 public class HistoryData extends AppCompatActivity implements OnChartValueSelectedListener{
@@ -107,9 +109,9 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
             xAxis.setDrawGridLines(false);
             xAxis.setDrawAxisLine(false);
             // 设置x刻度
-//            xAxis.setLabelCount(10,false);
+            xAxis.setLabelCount(10,false);
             // 让x轴上自定义的值和折线上相对应
-//            xAxis.setGranularity(1);
+            xAxis.setGranularity(1);
         }
 
         YAxis yAxis;
@@ -122,10 +124,15 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
         }
 
         allData = MDataBase.allData;
-        logcat(""+allData.length);
         setData();
 
-
+        xAxis.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                int id = (int)value;
+                return allData[29-id].date.substring(5);
+            }
+        });
         // draw points over time
         chart.animateY(1500);
 
@@ -223,7 +230,9 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
     @Override
     public void onValueSelected(Entry e, Highlight h) {
         //选中chart中的点
-        Toast.makeText(this, "选中了一个点", Toast.LENGTH_SHORT).show();
+        int i = 29-(int)e.getX();
+        Formatter formatter = new Formatter().format("%s: %d", allData[i].date, allData[i].steps);
+        Toast.makeText(this, formatter.toString(), Toast.LENGTH_SHORT).show();
     }
 
     @Override

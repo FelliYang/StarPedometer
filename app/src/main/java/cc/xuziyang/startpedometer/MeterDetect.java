@@ -12,6 +12,8 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -81,7 +83,7 @@ public class MeterDetect implements SensorEventListener {
     float maxValue = 19.6f;
 
     //步数
-    public static int CURRENT_SETP = 0;
+    public static int CURRENT_SETP;
     public static int TEMP_STEP = 0;
     private int lastStep = -1;
 
@@ -95,16 +97,17 @@ public class MeterDetect implements SensorEventListener {
      * 自定义的接口，实时向外传递步数
      */
     OnSensorChangeListener onSensorChangeListener;
-
+    private Handler handler;
     public interface OnSensorChangeListener {
         //当步数改变时,通知外部更新UI
         void onStepsListenerChange(int steps);
     }
-    public MeterDetect(){
+    public MeterDetect(OnSensorChangeListener sensorChangeListener, Handler _handler){
         mContext = MApplication.getContext();
+        handler = _handler;
         mSensorManager = (SensorManager)mContext.getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-
+        this.setOnSensorChangeListener(sensorChangeListener);
         // 数据库初始化
         initDB();
 
@@ -116,6 +119,7 @@ public class MeterDetect implements SensorEventListener {
         dbHelper.setDb(db);
         dbHelper.makeData();
 
+        dbHelper.queryAll();
         if(dbHelper.query( null)==0){
             showToast("not exist");
             dbHelper.insert(null,CURRENT_SETP);
@@ -123,9 +127,12 @@ public class MeterDetect implements SensorEventListener {
             showToast("exist");
             dbHelper.update(CURRENT_SETP);
         }
-
-        dbHelper.queryAll();
-
+        CURRENT_SETP = MDataBase.allData[0].steps;
+        Message message = new Message();
+        message.what = MainActivity.SET_STEP;
+        message.arg1 = CURRENT_SETP;
+        logcat("CURRENT_STEP: "+CURRENT_SETP);
+        handler.sendMessageDelayed(message,200);
     }
 
     @Override
@@ -260,6 +267,8 @@ public class MeterDetect implements SensorEventListener {
 
     public void onStop(){
         mSensorManager.unregisterListener(this);
+        dbHelper.update(CURRENT_SETP);
+        logcat("onStop");
     }
     //设置监听，传入回调对象
     public void setOnSensorChangeListener(

@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.sqlite.SQLiteDatabase;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -18,6 +19,9 @@ import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.Formatter;
 import java.util.List;
 import java.util.Timer;
@@ -26,6 +30,9 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 public class MeterDetect implements SensorEventListener {
     private final String TAG = MeterDetect.class.getName();
+    // 数据库
+    private MDataBase dbHelper;
+    SQLiteDatabase db;
 
     private int SENSER_DELAY =  50;             // 控制采样间隔
     private final SensorManager mSensorManager;
@@ -52,7 +59,7 @@ public class MeterDetect implements SensorEventListener {
     //波谷值
     float valleyOfWave = 0;
     //此次波峰的时间
-    long timeOfThisPeak = 0;
+//    long timeOfThisPeak = 0;
     //上次波峰的时间
     long timeOfLastPeak = 0;
     //系统当前的时间
@@ -81,7 +88,7 @@ public class MeterDetect implements SensorEventListener {
     private int pedometerState = 0;
     private Timer timer;
     // 倒计时2.0秒，2.0秒内不会显示计步，用于屏蔽细微波动
-    private long duration = 20000;
+    private long duration = 2000;
     private TimeCount timeCount;
 
     /**
@@ -94,10 +101,31 @@ public class MeterDetect implements SensorEventListener {
         void onStepsListenerChange(int steps);
     }
     public MeterDetect(){
-
         mContext = MApplication.getContext();
         mSensorManager = (SensorManager)mContext.getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        // 数据库初始化
+        initDB();
+
+    }
+
+    private void initDB() {
+        dbHelper = new MDataBase(mContext, "history.db", null, 4);
+        db = dbHelper.getWritableDatabase();
+        dbHelper.setDb(db);
+        dbHelper.makeData();
+
+        if(dbHelper.query( null)==0){
+            showToast("not exist");
+            dbHelper.insert(null,CURRENT_SETP);
+        }else{
+            showToast("exist");
+            dbHelper.update(CURRENT_SETP);
+        }
+
+        ArrayList<MDataBase.Item> allData = dbHelper.queryAll();
+
     }
 
     @Override
@@ -119,15 +147,14 @@ public class MeterDetect implements SensorEventListener {
             lastAcceleration = values;
         } else{
             if (DetectorPeak(values, lastAcceleration)){
-                timeOfLastPeak = timeOfThisPeak;
                 if((timeOfNow - timeOfLastPeak >200) &&
                         (peakOfWave-valleyOfWave>threadThreshold)&&(timeOfNow-timeOfLastPeak)<=2000){
-                    timeOfThisPeak = timeOfNow;
+                    timeOfLastPeak = timeOfNow;
                     perStep();
                 }
                 if((timeOfNow-timeOfLastPeak>200)&&
                         (peakOfWave-valleyOfWave>=initialThreshold)){
-                    timeOfThisPeak = timeOfNow;
+                    timeOfLastPeak = timeOfNow;
                     threadThreshold =  Peak_Valley_Thread(peakOfWave - valleyOfWave);
                 }
             }
@@ -173,18 +200,22 @@ public class MeterDetect implements SensorEventListener {
     private void perStep() {
 
         if(pedometerState==0){
-            timeCount = new TimeCount(duration, 700);
+            timeCount = new TimeCount(duration, 1000);
             timeCount.start();
             logcat("计时器开启");
+            lastStep = -1;
+            TEMP_STEP = 0;
             Toast.makeText(mContext,"检测到运动，计时器开启",Toast.LENGTH_LONG).show();
             pedometerState=1;
         }else if(pedometerState==1){
             // 待定状态
             TEMP_STEP++;
             Toast.makeText(mContext,"暂时计步中...",Toast.LENGTH_LONG).show();
-            logcat("暂时计步中");
+            logcat("暂时计步中 "+TEMP_STEP);
         }else if(pedometerState==2){
             CURRENT_SETP++;
+            logcat(""+CURRENT_SETP);
+            Toast.makeText(mContext,"计步中...",Toast.LENGTH_LONG).show();
             if(null !=onSensorChangeListener)
                 onSensorChangeListener.onStepsListenerChange(CURRENT_SETP);
         }
@@ -227,9 +258,6 @@ public class MeterDetect implements SensorEventListener {
         mSensorManager.registerListener(this, mAccelerometer ,SENSER_DELAY);
     }
 
-    protected void onPause() {
-        mSensorManager.unregisterListener(this);
-    }
     public void onStop(){
         mSensorManager.unregisterListener(this);
     }
@@ -252,7 +280,7 @@ public class MeterDetect implements SensorEventListener {
         @Override
         public void onTick(long l) {
             if(lastStep==TEMP_STEP){
-                logcat("检测到没有持续移动，停止检测");
+                logcat("检测到没有持续移动，停止检测" + TEMP_STEP);
 //                MainActivity.setInfoText("停止计步");
                 timeCount.cancel();
                 pedometerState = 0;
@@ -290,5 +318,9 @@ public class MeterDetect implements SensorEventListener {
 
         }
     }
+    private void showToast(String s){
+        Toast.makeText(mContext, s, Toast.LENGTH_LONG).show();
+    }
+
 }
 

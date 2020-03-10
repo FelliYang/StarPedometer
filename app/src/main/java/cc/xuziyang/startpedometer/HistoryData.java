@@ -105,6 +105,9 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
             //don't draw the line vertically
             xAxis.setDrawGridLines(false);
             xAxis.setDrawAxisLine(false);
+            // 设置x刻度
+            xAxis.setLabelCount(10,false);
+
         }
 
         YAxis yAxis;
@@ -125,6 +128,7 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
         Legend l = chart.getLegend();
         // draw legend entries as lines
         l.setForm(Legend.LegendForm.LINE);
+        
     }
 
     private void setData(int count, float range) {

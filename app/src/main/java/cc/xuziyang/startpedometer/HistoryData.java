@@ -138,7 +138,6 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
 
         allData = MDataBase.allData;
         setData();
-        hisMeters_textView.setText(""+allData[0].steps);        // 当前步数
 
         xAxis.setValueFormatter(new ValueFormatter() {
             @Override
@@ -154,8 +153,10 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
         Legend l = chart.getLegend();
         // draw legend entries as lines
         l.setForm(Legend.LegendForm.LINE);
-
         initUI();
+
+        hisMeters_textView.setText(""+allData[0].steps);        // 当前步数
+
     }
 
     private void initUI() {

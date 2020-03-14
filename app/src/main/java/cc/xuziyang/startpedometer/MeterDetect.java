@@ -114,7 +114,7 @@ public class MeterDetect implements SensorEventListener {
     }
 
     private void initDB() {
-        dbHelper = new MDataBase(mContext, "history.db", null, 5);
+        dbHelper = new MDataBase(mContext, "history.db", null, 1);
         db = dbHelper.getWritableDatabase();
         dbHelper.setDb(db);
         dbHelper.makeData();
@@ -215,17 +215,17 @@ public class MeterDetect implements SensorEventListener {
             logcat("计时器开启");
             lastStep = -1;
             TEMP_STEP = 0;
-            Toast.makeText(mContext,"检测到运动，计时器开启",Toast.LENGTH_LONG).show();
+//            Toast.makeText(mContext,"检测到运动，计时器开启",Toast.LENGTH_LONG).show();
             pedometerState=1;
         }else if(pedometerState==1){
             // 待定状态
             TEMP_STEP++;
-            Toast.makeText(mContext,"暂时计步中...",Toast.LENGTH_LONG).show();
+//            Toast.makeText(mContext,"暂时计步中...",Toast.LENGTH_LONG).show();
             logcat("暂时计步中 "+TEMP_STEP);
         }else if(pedometerState==2){
             CURRENT_SETP++;
             logcat(""+CURRENT_SETP);
-            Toast.makeText(mContext,"计步中...",Toast.LENGTH_LONG).show();
+//            Toast.makeText(mContext,"计步中...",Toast.LENGTH_LONG).show();
             if(null !=onSensorChangeListener)
                 onSensorChangeListener.onStepsListenerChange(CURRENT_SETP);
         }

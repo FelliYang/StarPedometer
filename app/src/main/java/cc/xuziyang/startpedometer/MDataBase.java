@@ -52,7 +52,6 @@ public class MDataBase extends SQLiteOpenHelper {
         if(dat==null){
             dat = getDateNow();
         }
-
         ContentValues contentValues = new ContentValues();
         contentValues.put("mDate", dat);
         contentValues.put("steps",steps);

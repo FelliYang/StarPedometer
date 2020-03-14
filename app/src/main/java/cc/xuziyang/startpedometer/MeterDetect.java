@@ -83,7 +83,7 @@ public class MeterDetect implements SensorEventListener {
     float maxValue = 19.6f;
 
     //步数
-    public static int CURRENT_SETP;
+    public static int CURRENT_SETP=0;
     public static int TEMP_STEP = 0;
     private int lastStep = -1;
 
@@ -119,15 +119,18 @@ public class MeterDetect implements SensorEventListener {
         dbHelper.setDb(db);
         dbHelper.makeData();
 
-        dbHelper.queryAll();
         if(dbHelper.query( null)==0){
-            showToast("not exist");
+            logcat("not exist");
             dbHelper.insert(null,CURRENT_SETP);
         }else{
-            showToast("exist");
-            dbHelper.update(CURRENT_SETP);
+            logcat("exist");
+//            dbHelper.update(CURRENT_SETP);
         }
+
+        dbHelper.queryAll();
+
         CURRENT_SETP = MDataBase.allData[0].steps;
+
         Message message = new Message();
         message.what = MainActivity.SET_STEP;
         message.arg1 = CURRENT_SETP;

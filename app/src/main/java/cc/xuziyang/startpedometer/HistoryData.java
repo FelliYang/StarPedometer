@@ -14,6 +14,8 @@ import android.graphics.DashPathEffect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -51,7 +53,18 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
 
     private LineChart chart;
     public MDataBase.Item[] allData;
+    private TextView hisMeters_textView;
     private final String TAG = HistoryData.class.getName();
+    private final int UPDATA_VIEW=1;
+    private Handler handler = new Handler(){
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            super.handleMessage(msg);
+            if(msg.what==UPDATA_VIEW){
+                hisMeters_textView.setText(""+msg.arg1);
+            }
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -125,6 +138,7 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
 
         allData = MDataBase.allData;
         setData();
+        hisMeters_textView.setText(""+allData[0].steps);        // 当前步数
 
         xAxis.setValueFormatter(new ValueFormatter() {
             @Override
@@ -141,6 +155,11 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
         // draw legend entries as lines
         l.setForm(Legend.LegendForm.LINE);
 
+        initUI();
+    }
+
+    private void initUI() {
+        hisMeters_textView = findViewById(R.id.history_meters);
     }
 
     private void setData() {
@@ -233,6 +252,11 @@ public class HistoryData extends AppCompatActivity implements OnChartValueSelect
         int i = 29-(int)e.getX();
         Formatter formatter = new Formatter().format("%s: %d", allData[i].date, allData[i].steps);
         Toast.makeText(this, formatter.toString(), Toast.LENGTH_SHORT).show();
+
+        Message message = new Message();
+        message.what = UPDATA_VIEW;
+        message.arg1 = allData[i].steps;
+        handler.sendMessage(message);
     }
 
     @Override
